@@ -44,10 +44,10 @@ double dwalltime(){
 
 void* multiplicador (void* argum){
     int id =*(int *)argum;
-    int i = id-(id % N );      //fila desde donde arranco
-    int j = (id % N)*N;         //columna desde donde arranco         
+    int i = (id-(id % N ))/N;      //fila desde donde arranco
+    int j = (id % N);         //columna desde donde arranco         
     for(int k=0;k<N;k++){
-	   C[id] = C[id] + A[i + k]*B[k + j]; 
+	   C[id] = C[id] + A[i*N + k]*B[k + j*N]; 
     }
     printf("mi id es %d proceso A desde %d y B desde %d y el valor calculado es %fs\n",id,i,j,getValor(C,i,j,ORDENXFILAS));
    
