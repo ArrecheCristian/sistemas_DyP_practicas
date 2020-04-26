@@ -22,7 +22,7 @@ N = 1024 --> 13.460257
 N = 2048 --> 103.399145
 
 //En la v2 tarda un poco màs por el hecho de los fallos de cache ya analizados reiteradas veces. Por lo tanto la mejor version
-del algoritmo secuencial es la que inicializa C dentro de la multiplicacion
+del algoritmo secuencial es la que inicializa C dentro de la multiplicacion (matrices_optimizado.c)
 
 
 # 1E

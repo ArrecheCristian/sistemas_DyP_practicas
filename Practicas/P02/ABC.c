@@ -2,35 +2,13 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <sys/time.h>
+
 #define ORDENXFILAS 0
 #define ORDENXCOLUMNAS 1
 
-
-
-double *A;
-double *B;
-double *C;
-double *D;
-int N;  
-
-//Retorna el valor de la matriz en la posicion fila y columna segun el orden que este ordenada
-double getValor(double *matriz,int fila,int columna,int orden){
- if(orden==ORDENXFILAS){
-  return(matriz[fila*N+columna]);
- }else{
-  return(matriz[fila+columna*N]);
- }
-}
-
-//Establece el valor de la matriz en la posicion fila y columna segun el orden que este ordenada
-void setValor(double *matriz,int fila,int columna,int orden,double valor){
- if(orden==ORDENXFILAS){
-  matriz[fila*N+columna]=valor;
- }else{
-  matriz[fila+columna*N]=valor;
- }
-}
-
+double *A, *B, *C, *D;              //matrices a utilzar
+int N;
+pthread_mutex_t miMutex;
 //Para calcular tiempo
 double dwalltime(){
         double sec;
@@ -47,31 +25,37 @@ void* multiplicador (void* argum){
     int i = (id-(id % N ))/N;      //fila desde donde arranco
     int j = (id % N);         //columna desde donde arranco         
     for(int k=0;k<N;k++){
-	   C[id] = C[id] + A[i*N + k]*B[k + j*N]; 
+        pthread_mutex_lock(&miMutex);
+	    C[id] = C[id] + A[i*N + k]*B[k + j*N]; 
+        pthread_mutex_unlock(&miMutex);
     }
-    printf("mi id es %d proceso A desde %d y B desde %d y el valor calculado es %fs\n",id,i,j,getValor(C,i,j,ORDENXFILAS));
-   
+    //printf("mi id es %d proceso A desde %d y B desde %d y el valor calculado es %fs\n",id,i,j,C[i*N + j]);
+    pthread_exit(NULL);
 }
-
-
-
+ 
 
 int main(int argc, char* argv[]){
     
-    int T = atoi(argv[1]);  //cantidad de threads que se utilizaran
-    N = atoi(argv[2]); //dimension de las matrices
-    int check = 1;
-    pthread_t misThreads[T];
-    int threads_ids[T];
-    printf("N es %d y T es %d\n",N,T);
+    //Controla los argumentos al programa
+    if ((argc != 3) || ((atoi(argv[1])) <= 0)){
+        printf("\nUsar: %s t n\n  t: Cantidad de Threads \n  n: Dimension de la matriz \n", argv[0]);
+        exit(1);
+    }
 
+    int check = 1;
+    
+    int T = atoi(argv[1]);              //cantidad de threads
+    N = atoi(argv[2]);              //dimension de las matrices
+    int threads_ids[T];
+    pthread_t misThreads[T];
+    pthread_mutex_init(&miMutex,NULL);
+    printf("N es %d y T es %d\n",N,T);
 
     //Aloca memoria para las matrices
     A=(double*)malloc(sizeof(double)*N*N);
     B=(double*)malloc(sizeof(double)*N*N);
     C=(double*)malloc(sizeof(double)*N*N);
    
-    
     
     //Inicializa las matrices A  B y C en 1
     for(int i=0;i<N;i++){
@@ -101,7 +85,7 @@ int main(int argc, char* argv[]){
 
 
 
-      //Verifica el resultado
+    //Verifica el resultado
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             //check = check && (getValor(C,i,j,ORDENXFILAS) == N);
@@ -115,7 +99,7 @@ int main(int argc, char* argv[]){
         printf("Multiplicacion de matrices: Resultado erroneo\n");
     }
 
-
+    /*
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             printf("A[%d.%d]= %lf\n",i,j,A[i*N + j]);
@@ -134,10 +118,7 @@ int main(int argc, char* argv[]){
             
         }
     }
-
-           
-
-
+    */
 
     free(A);
     free(B);
