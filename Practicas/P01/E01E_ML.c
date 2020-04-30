@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     printf("Multiplicacion ML COMPLETA:\n");
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
-            for (int k = 0; k < N; k++) {
+            for (int k = j; k < N; k++) {               //Acorto el recorrido al igual que para la matriz reducida
                 O[i*N + j] = O[i*N + j] + M[i*N + k] * C[k  + N * j];
             }
         }

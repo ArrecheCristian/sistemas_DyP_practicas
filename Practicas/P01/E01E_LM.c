@@ -80,8 +80,8 @@ int main(int argc, char** argv) {
     printf("Multiplicacion LM COMPLETA:\n");
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
-            for (int k = 0; k < N; k++) {
-                O[i*N + j] = O[i*N + j] + C[i * N + k ] * M[j * N + k];
+            for (int k = 0; k < i+1; k++) {             //Acorto el recorrido al igual que para la matriz reducida
+                O[i*N + j] = O[i*N + j] + C[i * N + k ] * M[k + j*N];
             }
         }
     }
