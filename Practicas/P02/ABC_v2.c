@@ -4,7 +4,7 @@
 #include <sys/time.h>
 
 
-double *A, *B, *C;              //matrices a utilzar
+double *A, *B, *C, *ab, *abc;              //matrices a utilzar
 int N, T, filas_x_thread;
 
 
@@ -20,15 +20,23 @@ double dwalltime(){
 
 
 void* multiplicador (void* id_t){
-    int id = *(int *)id_t;
+    int id = *(int *)id_t;                                  //ID del thread actual
     int i,j,k;
-    int indice_inicio = id * filas_x_thread;
-    int indice_final = (id+1) * filas_x_thread;
+    int indice_inicio = id * filas_x_thread;                //dependiendo del ID y de la cantidad de filas que le corresponde a
+    int indice_final = (id+1) * filas_x_thread;             //cada thread, seteo los indices de recorridos para las filas
 
-    for(i = indice_inicio; i < indice_final; i++){
+    for(i = indice_inicio; i < indice_final; i++){          //solo recorren y calculan la parte que le corresponde a ese thread
         for(j = 0; j < N; j++){
             for(k = 0; k < N; k++){
-                C[i*N +j] = C[i*N +j] + A[i*N + k]*B[k + j*N]; 
+                ab[i*N +j] = ab[i*N +j] + A[i*N + k]*B[k + j*N];    //primera parte de la multiplicacion A*B
+            }
+        }
+    }
+    
+    for(i = indice_inicio; i < indice_final; i++){
+        for(j = 0; j < N; j++){                             //como ab se esta recorriendo por filas, no hay problema de inconsistencias
+            for(k = 0; k < N; k++){                         //junto con el bucle anterior, los datos que se estàn leyendo ya fueron     
+                abc[i*N +j] = abc[i*N +j] + ab[i*N + k]*C[k + j*N];     //actualizados por el mismo thread.
             }
         }
     }
@@ -56,16 +64,20 @@ int main(int argc, char* argv[]){
     pthread_t misThreads[T];        //arreglo de threads, cantidad pasada por parametro
 
     //Aloca memoria para las matrices
-    A=(double*)malloc(sizeof(double)*N*N);
-    B=(double*)malloc(sizeof(double)*N*N);
-    C=(double*)malloc(sizeof(double)*N*N);
-   
+    A = (double*)malloc(sizeof(double)*N*N);
+    B = (double*)malloc(sizeof(double)*N*N);
+    C = (double*)malloc(sizeof(double)*N*N);
+    ab = (double*)malloc(sizeof(double)*N*N);
+    abc = (double*)malloc(sizeof(double)*N*N);
+
     //Inicializa las matrices A  B y C
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             A[i*N + j] = 1;                        
             B[i + j*N] = 1;
-            C[i*N + j] = 0;  
+            C[i + j*N] = 1;
+            ab[i*N + j] = 0;
+            abc[i*N + j] = 0;  
         }
     }   
 
@@ -91,7 +103,7 @@ int main(int argc, char* argv[]){
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             //check = check && (getValor(C,i,j,ORDENXFILAS) == N);
-            check = check && (C[i*N + j] == N);
+            check = check && (abc[i*N + j] == N*N);
         }
     }   
 
@@ -104,6 +116,8 @@ int main(int argc, char* argv[]){
     free(A);
     free(B);
     free(C);
+    free(ab);
+    free(abc);
 
     return 0;
 }
