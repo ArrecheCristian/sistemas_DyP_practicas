@@ -4,11 +4,25 @@
 #include <omp.h>
 
 
+//Para calcular tiempo
+double dwalltime(){
+    double sec;
+    struct timeval tv;
+
+    gettimeofday(&tv,NULL);
+    sec = tv.tv_sec + tv.tv_usec/1000000.0;
+    return sec;
+}
+
 
 int main (int argc, char* argv[]){
 
-    double *A, *B, *C, *ab, *abc;              //matrices a utilzar
-    int N, T, i, j, k;
+    double *A, *B, *C, *ab, *abc;               //matrices a utilzar
+    int N, T, i, j, k;                          //argumentos e indices
+    
+    double timetick;                            //para calcular tiempos de ejecucion
+    int check = 1;                              //para verificar resultado
+
 
     //Controla los argumentos al programa
     if ((argc != 3) || ((atoi(argv[1])) <= 0)){
@@ -40,15 +54,41 @@ int main (int argc, char* argv[]){
 
 
     //REALIZA LA MULTIPLICACION
+    timetick = dwalltime();
 
-    #pragma omp parallel private (i,j,k)
+    
+    #pragma omp parallel for private (i,j,k)            //codigo paralelo
     {
         
+
+
+    }                       //barrera implicita (JOIN) para cada hilo
+ 
+
+    printf("Tiempo en segundos %f\n", dwalltime() - timetick);
+    
+    
+    //Verifica el resultado
+    for(int i=0;i<N;i++){
+        for(int j=0;j<N;j++){
+            //check = check && (getValor(C,i,j,ORDENXFILAS) == N);
+            check = check && (abc[i*N + j] == N*N);
+        }
+    }   
+
+    if(check){
+        printf("Multiplicacion de matrices: Resultado correcto\n");
+    }else{
+        printf("Multiplicacion de matrices: Resultado erroneo\n");
     }
 
+    free(A);
+    free(B);
+    free(C);
+    free(ab);
+    free(abc);
 
-
-
+    return 0;
 
 }
 

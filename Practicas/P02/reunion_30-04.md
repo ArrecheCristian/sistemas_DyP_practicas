@@ -23,11 +23,12 @@ linea el compilador se rompe:
 
 }
 
-Si uso "master" tienen que existir hilos, sino no tiene sentido., o sea usarlo adentro.
+Si uso "master" tienen que existir hilos, sino no tiene sentido., o sea usarlo
+adentro del omp paralell principal.
 
 Para usar el collapse en el for tienen que estar los 3 for inmediatamente juntos. 
 
-En el section entra 1 solo y los demas esperan. 
+En el section entra 1 solo hilo y los demas esperan. 
 
 
 
