@@ -19,7 +19,7 @@ int main (int argc, char* argv[]){
 
     double *A, *B, *C, *ab, *abc;               //matrices a utilzar
     int N, T, i, j, k;                          //argumentos e indices
-    
+    register int aux;
     double timetick;                            //para calcular tiempos de ejecucion
     int check = 1;                              //para verificar resultado
 
@@ -33,6 +33,7 @@ int main (int argc, char* argv[]){
     N = atoi(argv[2]);              //dimension de las matrices
     T = atoi(argv[1]);              //cantidad de threads
     omp_set_num_threads(T);         //Crea los T threads 
+    
 
     //Aloca memoria para las matrices
     A = (double*) malloc(sizeof(double)*N*N);
@@ -41,7 +42,7 @@ int main (int argc, char* argv[]){
     ab = (double*) malloc(sizeof(double)*N*N);
     abc = (double*) malloc(sizeof(double)*N*N);
 
-    //Inicializa las matrices A  B y C
+    //Inicializa todas las matrices
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             A[i*N + j] = 1;                        
@@ -56,15 +57,28 @@ int main (int argc, char* argv[]){
     //REALIZA LA MULTIPLICACION
     timetick = dwalltime();
 
-    
-    #pragma omp parallel for private (i,j,k)            //codigo paralelo
-    {
-        
+    #pragma omp parallel for collapse(2) private(i,j,k, aux) 
+        for ( i = 0; i < N; i++){
+            for ( j = 0; j < N; j++){
+                aux = 0;
+                for ( k = 0; k < N; k++){
+                    aux += A[i*N +k] * B[k + j*N];
+                }
+                ab[i*N +j] = aux;
+            }
+        }       //barrera implicita (JOIN) para cada hilo
 
-
-    }                       //barrera implicita (JOIN) para cada hilo
+    #pragma omp parallel for collapse(2) private (i,j,k, aux) 
+        for ( i = 0; i < N; i++){
+            for ( j = 0; j < N; j++){
+                aux = 0;
+                for ( k = 0; k < N; k++){
+                    aux += ab[i*N +k] * C[k + j*N];
+                }
+                abc[i*N +j] = aux;
+            }
+        }       //barrera implicita (JOIN) para cada hilo
  
-
     printf("Tiempo en segundos %f\n", dwalltime() - timetick);
     
     

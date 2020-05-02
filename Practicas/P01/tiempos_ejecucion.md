@@ -11,18 +11,10 @@ N = 512  --> 3.890748
 N = 1024  --> 31.298666
 N = 2048  --> 250.133195
 
-OPTIMIZADA SIN OVERHEAD DE FUNCIONES (inicializando C en la multiplicacion):
-N = 512 --> 1.541226
-N = 1024 --> 12.492689
-N = 2048 --> 99.795987
-
-OPTIMIZADA SIN OVERHEAD DE FUNCIONES (inicializando C junto con A y B):
-N = 512 --> 1.573992
-N = 1024 --> 13.460257
-N = 2048 --> 103.399145
-
-//En la v2 tarda un poco màs por el hecho de los fallos de cache ya analizados reiteradas veces. Por lo tanto la mejor version
-del algoritmo secuencial es la que inicializa C dentro de la multiplicacion (matrices_optimizado.c)
+OPTIMIZADA SIN OVERHEAD DE FUNCIONES:
+N = 512 --> 1.217065
+N = 1024 --> 10.122610
+N = 2048 --> 81.261997
 
 
 # 1E

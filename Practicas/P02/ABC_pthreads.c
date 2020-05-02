@@ -22,22 +22,27 @@ double dwalltime(){
 void* multiplicador (void* id_t){
     int id = *(int *)id_t;                                  //ID del thread actual
     int i,j,k;
+    register int aux;
     int indice_inicio = id * filas_x_thread;                //dependiendo del ID y de la cantidad de filas que le corresponde a
     int indice_final = (id+1) * filas_x_thread;             //cada thread, seteo los indices de recorridos para las filas
 
     for(i = indice_inicio; i < indice_final; i++){          //solo recorren y calculan la parte que le corresponde a ese thread
         for(j = 0; j < N; j++){
+            aux = 0;
             for(k = 0; k < N; k++){
-                ab[i*N +j] = ab[i*N +j] + A[i*N + k]*B[k + j*N];    //primera parte de la multiplicacion A*B
+                aux += A[i*N + k]*B[k + j*N];    //primera parte de la multiplicacion A*B
             }
+            ab[i*N +j] = aux;
         }
     }
     
     for(i = indice_inicio; i < indice_final; i++){
-        for(j = 0; j < N; j++){                             //como ab se esta recorriendo por filas, no hay problema de inconsistencias
+        for(j = 0; j < N; j++){   
+            aux = 0;                                      //como ab se esta recorriendo por filas, no hay problema de inconsistencias
             for(k = 0; k < N; k++){                         //junto con el bucle anterior, los datos que se estàn leyendo ya fueron     
-                abc[i*N +j] = abc[i*N +j] + ab[i*N + k]*C[k + j*N];     //actualizados por el mismo thread.
+                aux += ab[i*N + k]*C[k + j*N];     //actualizados por el mismo thread.
             }
+            abc[i*N +j] = aux;
         }
     }
 
@@ -70,7 +75,7 @@ int main(int argc, char* argv[]){
     ab = (double*)malloc(sizeof(double)*N*N);
     abc = (double*)malloc(sizeof(double)*N*N);
 
-    //Inicializa las matrices A  B y C
+    //Inicializa todas las matrices 
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             A[i*N + j] = 1;                        
@@ -92,11 +97,11 @@ int main(int argc, char* argv[]){
     }
 
     //Espera que todos los threads terminen su ejecucion
-    for(int id=0;id<T;id++){
-        pthread_join(misThreads[id],NULL);
+    for(int id = 0; id < T; id++){
+        pthread_join(misThreads[id], NULL);
     }
 
-    printf("Tiempo en segundos %f\n", dwalltime() - timetick);
+    printf("Tiempo en segundos: %f\n", dwalltime() - timetick);
 
 
     //Verifica el resultado
