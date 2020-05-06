@@ -7,11 +7,12 @@
 #define TRUE 1
 #define FALSE 0
 
-double *A, *minimosT, *espera;                   //arreglo a utilzar
+double *A, *minimosT;                   //arreglo a utilzar
 int N, T, cant_elem_por_hilos;
 
 pthread_mutex_t *miMutex;               //definición mutex
 pthread_cond_t *sem;
+
 
 //Para calcular tiempo
 double dwalltime(){
@@ -22,6 +23,7 @@ double dwalltime(){
     sec = tv.tv_sec + tv.tv_usec/1000000.0;
     return sec;
 }
+
 
 void* busqueda(void* argum){
 
@@ -38,23 +40,17 @@ void* busqueda(void* argum){
             min=A[i];
         }
     }
-        
-    minimosT[id] = min;                         //Queda armado el vector de minimos de cada hilo
-    printf("El minimo es %f\n", min);
 
-    while( condicion && (T != 1)){
+    minimosT[id] = min;                         //Queda armado el vector de minimos de cada hilo
+    printf("ID: %d     -> El minimo es %f\n", id, min);
+
+    if ( id < mitad_actual && (T != 1)){    
     
-        if ( id < mitad_actual){
-            pthread_mutex_lock(&miMutex[id]);
-            printf("soy %d y estoy esperando a %d \n",id,id+mitad_actual);
+        while ( id < mitad_actual){
             
-            if (espera[id] == FALSE){
-                pthread_cond_wait(&sem[id],&miMutex[id]);
-                
+            if (mitad_actual > 0){
+                pthread_join(id + mitad_actual, NULL);
             }
-            espera[id] = FALSE;
-            pthread_mutex_unlock(&miMutex[id]);
-            printf("soy %d y termine de esperar a %d \n",id,id+mitad_actual);
 
             if( minimosT[id] > minimosT[id + mitad_actual] ){
                 minimosT[id] = minimosT[id + mitad_actual];
@@ -62,22 +58,18 @@ void* busqueda(void* argum){
             mitad_actual = mitad_actual*0.5;
             printf("\n VALOR MITAD_ACTUAL %d\n", mitad_actual);
             
-        }else{
-            pthread_mutex_lock(&miMutex[id]);
-            printf("soy %d despertando a %d \n",id,id-mitad_actual);
-            pthread_cond_signal(&sem[id-mitad_actual]);
-            espera[id-mitad_actual] = TRUE; 
-            pthread_mutex_unlock(&miMutex[id-mitad_actual]);   
-            printf("\nSe queda en el signal"); 
-            condicion=FALSE;
         }
    }
-
-   /// printf("soy el hilo %d y mi minimo es %lf \n",id,minimosT[id]);
-    //printf("empiezo en la pos  %d y termino en la pos %d \n",pos_ini,pos_final-1);
     pthread_exit(NULL);
 }
  
+/*m = 1
+    0   1   2   3   4   5   6   7   8
+    04 15 26 37 48
+    02 13
+
+*/
+
 
 int main(int argc, char* argv[]){
       
@@ -88,10 +80,6 @@ int main(int argc, char* argv[]){
     //Aloca memoria para el arreglo
     A = (double*)malloc(sizeof(double)*N);                          //contendra los datos originales.
     minimosT = (double*)malloc(sizeof(double)*T);                   //se utilizara como auxiliar para compartir minimos
-    espera = (double*)malloc(sizeof(double)*T/2);                   //se utilizara como auxiliar para compartir minimos
-
-    sem = (pthread_cond_t*)malloc(sizeof(pthread_cond_t)*T/2);        //arreglo de variables condicion
-    miMutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t)*T/2);
     int threads_ids[T];                                             //ids para los threads
     pthread_t misThreads[T];                                        //declaracion threads
                                //inicialización mutex
@@ -99,21 +87,12 @@ int main(int argc, char* argv[]){
     
     printf("N es %d y T es %d \n",N,T);
     cant_elem_por_hilos = N/T;                               //se utiliza para determinar cuantos elementos por hilos se tienen
-    printf("vector A \n");
 
     for(int i=0;i<N;i++){
         A[i] = (rand()%10);
         printf("%lf ",A[i]);
     } 
     printf("\n");
-        
-    for(int id = 0; id < T/2; id++){
-        pthread_cond_init(&sem[id],NULL);
-        pthread_mutex_init(&miMutex[id], NULL); 
-        pthread_mutex_lock(&miMutex[id]);
-        espera[id] = FALSE;
-    }
-
 
 
     //INICIA LA OPERACION
@@ -127,15 +106,16 @@ int main(int argc, char* argv[]){
            //se encarga de generar los threads con sus respectivos parametros.
         for(int id=0;id<T;id++){
                 threads_ids[id]=id;  //se utiliza para no generar inconsistencias con las ids
+
                 pthread_create(&misThreads[id],NULL,&busqueda,(void*) &threads_ids[id]);
         }
         
         //espera de fin de ejecucion para los threads
-    
-        for(int id=0;id<T;id++){
-            pthread_join(misThreads[id],NULL);
-        }
+
     }
+
+    pthread_join(0,NULL);
+
 
     printf("Tiempo en segundos: %f\n", dwalltime() - timetick);
     //por naturaleza de la solucion en la primer posicion siempre queda el minimo.
@@ -146,4 +126,3 @@ int main(int argc, char* argv[]){
     
     return 0;
 }
-
