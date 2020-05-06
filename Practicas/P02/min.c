@@ -7,7 +7,8 @@
 #define TRUE 1
 #define FALSE 0
 
-double *A, *minimosT, *espera;      //arreglo a utilzar
+short int *A, *minimosT, *maximosT;
+double *espera;      //arreglo a utilzar
 int N, T, cant_elem_por_hilos;
 
 pthread_mutex_t *miMutex;    //definición mutex
@@ -28,7 +29,8 @@ void* busqueda(void* argum){
 
     int id = *(int *)argum;                             //id del hilo
     int condicion = TRUE;                               //es utilizada para mantener el hilo mientras sea necesario.
-    double min =   99999999999;                           //variable auxiliar para calcular minimo
+    short int min =   9999;                           //variable auxiliar para calcular minimo
+    short int max = -1;
     int pos_ini = id*cant_elem_por_hilos;               //posicion desde la que el hilo procesa
     int pos_final = (id+1)*cant_elem_por_hilos;         // idem anterior pero hasta que finaliza.
     int mitad_actual = T*0.5;                           //es utilizada como variable auxiliar para acceder a las pos corresp
@@ -38,52 +40,58 @@ void* busqueda(void* argum){
         if(A[i]<min){
             min=A[i];
         }
+        if(A[i]>max){
+            max=A[i];
+        }
     }
+    minimosT[id] = min;     //Queda armado el vector de minimos de cada hilo
+    maximosT[id] = max;
+
     if (T==1)
     {
         return 0;
     }
       
-    minimosT[id] = min;                         //Queda armado el vector de minimos de cada hilo
-    //printf("El minimo es %f\n", min);
-
+   
     while( condicion && (T != 1)){
-        printf("\n entre al while %d\n ",id);
+      
     
         if ( id < mitad_actual){
-            printf("\n entre al if %d\n ",id);
+           
 
             pthread_mutex_lock(&miMutex[id+mitad_actual]);
             
             if (espera[id+mitad_actual] == FALSE){
                 pthread_cond_wait(&sem[id+mitad_actual],&miMutex[id+mitad_actual]);
-                printf("soy %d y estoy esperando a %d \n",id,id+mitad_actual);
+       
                 
             }
             espera[id] = FALSE;
             pthread_mutex_unlock(&miMutex[id+mitad_actual]);
-            printf("soy %d y termine de esperar a %d \n",id,id+mitad_actual);
+       
 
             if( minimosT[id] > minimosT[id + mitad_actual] ){
                 minimosT[id] = minimosT[id + mitad_actual];
             }
+            if (maximosT[id] < maximosT[id+mitad_actual] ) {
+                maximosT[id] = maximosT[id+mitad_actual];
+            }
             mitad_actual = mitad_actual*0.5;
-            printf("\n VALOR MITAD_ACTUAL %d\n", mitad_actual);
-            printf("\n sali del if %d\n ",id);
+          
+         
         }else{
-           printf("\n entre al else %d\n ",id); 
+         
            pthread_mutex_lock(&miMutex[id]);
-            printf("soy %d despertando a %d \n",id,id-mitad_actual);
+        
             pthread_cond_signal(&sem[id]);
             espera[id] = TRUE; 
             pthread_mutex_unlock(&miMutex[id]);  
             condicion=FALSE;
-            printf("\n sali de else %d\n ",id);
+            
         }
    }
-    printf("\n SALI %d\n ",id);
-   /// printf("soy el hilo %d y mi minimo es %lf \n",id,minimosT[id]);
-    //printf("empiezo en la pos  %d y termino en la pos %d \n",pos_ini,pos_final-1);
+
+
     pthread_exit(NULL);
 }
  
@@ -95,8 +103,9 @@ int main(int argc, char* argv[]){
     double timetick;                       //para calcular tiempos de ejecucion
 
     //Aloca memoria para el arreglo
-    A = (double*)malloc(sizeof(double)*N);                          //contendra los datos originales.
-    minimosT = (double*)malloc(sizeof(double)*T);                   //se utilizara como auxiliar para compartir minimos
+    A = (short int*)malloc(sizeof(short int)*N);                          //contendra los datos originales.
+    minimosT = (short int*)malloc(sizeof(short int)*T);                   //se utilizara como auxiliar para compartir minimos
+    maximosT = (short int*)malloc(sizeof(short int)*T);
     espera = (double*)malloc(sizeof(double)*T);                   //se utilizara como auxiliar para compartir minimos
 
     sem = (pthread_cond_t*)malloc(sizeof(pthread_cond_t)*T);        //arreglo de variables condicion
@@ -107,11 +116,11 @@ int main(int argc, char* argv[]){
     
     printf("N es %d y T es %d \n",N,T);
     cant_elem_por_hilos = N/T;                               //se utiliza para determinar cuantos elementos por hilos se tienen
-    printf("vector A \n");
+   // printf("vector A \n");
 
     for(int i=0;i<N;i++){
         A[i] = (rand()%10);
-        //printf("%lf ",A[i]);
+//printf("%d ",A[i]);
     } 
     printf("\n");
     for(int id=0;id<T;id++){    
@@ -152,7 +161,8 @@ int main(int argc, char* argv[]){
 
     
     //en la primer posicion siempre queda el minimo.
-    printf("valor min %lf",minimosT[0]);
+    printf("valor min %d \n", minimosT[0]);
+    printf("valor maximo %d\n",maximosT[0]);
     
     free(A);
     free(minimosT);
