@@ -45,6 +45,7 @@ void* multiplicador (void* id_t){
             abc[i*N +j] = aux;
         }
     }
+
     pthread_exit(NULL);
 }
  

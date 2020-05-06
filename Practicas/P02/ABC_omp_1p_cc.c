@@ -57,29 +57,32 @@ int main (int argc, char* argv[]){
     //REALIZA LA MULTIPLICACION
     timetick = dwalltime();
 
-    //usando 2 parallel (los hilos se duermen entre medio)
-    #pragma omp parallel for collapse(2) private(i,j,k, aux) 
-        for ( i = 0; i < N; i++){
-            for ( j = 0; j < N; j++){
-                aux = 0;
-                for ( k = 0; k < N; k++){
-                    aux += A[i*N +k] * B[k + j*N];
+    //Usando 1 solo parallel
+    #pragma omp parallel private(i,j,k, aux)
+    { 
+        #pragma omp for collapse(2)
+            for ( i = 0; i < N; i++){
+                for ( j = 0; j < N; j++){
+                    aux = 0;
+                    for ( k = 0; k < N; k++){
+                        aux += A[i*N +k] * B[k + j*N];
+                    }
+                    ab[i*N +j] = aux;
                 }
-                ab[i*N +j] = aux;
-            }
-        }       //barrera implicita (JOIN) para cada hilo
+            }       //barrera implicita (JOIN) para cada hilo
 
-    #pragma omp parallel for collapse(2) private (i,j,k, aux) 
-        for ( i = 0; i < N; i++){
-            for ( j = 0; j < N; j++){
-                aux = 0;
-                for ( k = 0; k < N; k++){
-                    aux += ab[i*N +k] * C[k + j*N];
+        #pragma omp for collapse(2)
+            for ( i = 0; i < N; i++){
+                for ( j = 0; j < N; j++){
+                    aux = 0;
+                    for ( k = 0; k < N; k++){
+                        aux += ab[i*N +k] * C[k + j*N];
+                    }
+                    abc[i*N +j] = aux;
                 }
-                abc[i*N +j] = aux;
-            }
-        }       //barrera implicita (JOIN) para cada hilo
- 
+            }       //barrera implicita (JOIN) para cada hilo
+    }
+
     printf("Tiempo en segundos %f\n", dwalltime() - timetick);
     
     
@@ -106,6 +109,3 @@ int main (int argc, char* argv[]){
     return 0;
 
 }
-
-
-

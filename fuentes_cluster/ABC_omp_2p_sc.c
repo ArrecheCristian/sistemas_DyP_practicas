@@ -57,8 +57,8 @@ int main (int argc, char* argv[]){
     //REALIZA LA MULTIPLICACION
     timetick = dwalltime();
 
-    //usando 2 parallel (los hilos se duermen entre medio)
-    #pragma omp parallel for collapse(2) private(i,j,k, aux) 
+    //usando 2 parallel (los hilos se duermen entre los bucles)
+    #pragma omp parallel for private(i,j,k, aux) 
         for ( i = 0; i < N; i++){
             for ( j = 0; j < N; j++){
                 aux = 0;
@@ -69,7 +69,7 @@ int main (int argc, char* argv[]){
             }
         }       //barrera implicita (JOIN) para cada hilo
 
-    #pragma omp parallel for collapse(2) private (i,j,k, aux) 
+    #pragma omp parallel for private (i,j,k, aux) 
         for ( i = 0; i < N; i++){
             for ( j = 0; j < N; j++){
                 aux = 0;
@@ -106,6 +106,3 @@ int main (int argc, char* argv[]){
     return 0;
 
 }
-
-
-
