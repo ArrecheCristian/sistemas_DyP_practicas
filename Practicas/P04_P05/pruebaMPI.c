@@ -18,6 +18,7 @@ int main(int argc, char* argv[]){
 	return(0);
 }
 
+
 static void proceso(int myRank,int cantidadDeProcesos){
  MPI_Status status;
  int mensaje;
@@ -26,21 +27,21 @@ static void proceso(int myRank,int cantidadDeProcesos){
  char hostname[255];
 
 	gethostname(hostname,255);
-	printf("Proceso %i >> LISTO EN HOST %s\n",myRank,hostname);
+	printf("Proceso %i --> LISTO EN HOST %s\n", myRank, hostname);
 
 	// Envia un mensaje a cada uno de los otros procesos
-	for(p=0;p<cantidadDeProcesos;p++){
-		if(p!=myRank){
-			MPI_Send(&myRank,1,MPI_INT,p,0,MPI_COMM_WORLD);
-			printf("Proceso %i >> ENVIO A %i \n",myRank,p);
+	for(p=0; p<cantidadDeProcesos; p++){
+		if(p != myRank){
+			MPI_Send(&myRank, 1, MPI_INT, p, 0, MPI_COMM_WORLD);
+			printf("Proceso %i --> ENVIO A %i \n", myRank, p);
 		}
 	}
 
 	// Recibe el mensaje de cada uno de los otros procesos
-	for(p=0;p<cantidadDeProcesos-1;p++){
-		if(p!=myRank){
-			MPI_Recv(&mensaje,1,MPI_INT,p,0,MPI_COMM_WORLD,&status);
-			printf("Proceso %i >> RECIBIO DE %i \n",myRank,mensaje);
+	for(p=0; p<cantidadDeProcesos; p++){                    //el for era hasta cantidadDeProcesos-1, no se por qué, lo cambié yo jeje
+		if(p != myRank){
+			MPI_Recv(&mensaje, 1, MPI_INT, p, 0, MPI_COMM_WORLD, &status);
+			printf("Proceso %i --> RECIBO DE %i \n", myRank, mensaje);
 		}
 	}
 
