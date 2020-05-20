@@ -65,8 +65,7 @@ static void procesoPadre(int id, int cantidadDeProcesos, int N){
     }
     
     for (i=1; i<cantidadDeProcesos; i++){                       //envia las matrices a todos los procesos (se excluye el proceso 0)
-        A += i * filas_por_proceso;                                                 //muevo el puntero de A para la porcion de cada proceso
-        MPI_Send(A, N*filas_por_proceso, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);         //de A solo manda la parte que necesita
+        MPI_Send(&A[i*filas_por_proceso], N*filas_por_proceso, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);         //de A solo manda la parte que necesita
         MPI_Send(B, N*N, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);                         //B se manda completa
     }
 
@@ -80,19 +79,12 @@ static void procesoPadre(int id, int cantidadDeProcesos, int N){
         }
     }
 
-    for (int p=1; p<cantidadDeProcesos; p++){               //recibo las porciones de matrices de todos los procesos en 'temp'
-        MPI_Recv(temp, N*filas_por_proceso, MPI_DOUBLE, p, 0, MPI_COMM_WORLD, &status);
-        
-        int offset = p*filas_por_proceso;                   //desplazamiento para almacenar en la posicion correcta de C
-        
-        for (i = 0; i < filas_por_proceso; i++){            //copio los valores de temp en la posicion correspondiente de C
-            for (j = 0; j < N; j++){
-                C[(i + offset)*N +j] = temp[i*N +j];        //cada porcion ejecutada por cada proceso es asignada a la matriz final C
-            }
-        }
+    for (int p=1; p<cantidadDeProcesos; p++){               //recibo las porciones de matrices de todos los procesos 
+                                                            //en la porcion que corresponde de C
+        MPI_Recv(&C[p*filas_por_proceso*N], N*filas_por_proceso, MPI_DOUBLE, p, 0, MPI_COMM_WORLD, &status);
     }
 
-    //solo para corroborar la correcta asignacion de C, si es una matriz chica la imprime
+    //solo para corroborar la correcta asignacion de C, si es una matriz chica (8, 16) la imprime
     if ( N < 17) {             
         printf("\n\n");
         for (int i = 0; i < N; i++) {
@@ -118,11 +110,10 @@ static void procesoPadre(int id, int cantidadDeProcesos, int N){
         printf("Multiplicacion de matrices: Resultado erroneo\n");
     }
 
-    /*
     free(A);
     free(B);
     free(C);
-    free(temp);*/
+    free(temp);
 
 }
 
