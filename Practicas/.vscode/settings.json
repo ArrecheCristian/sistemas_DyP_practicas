@@ -10,6 +10,7 @@
         "*.tcc": "c",
         "typeinfo": "c",
         "time.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "unistd.h": "c"
     }
 }
