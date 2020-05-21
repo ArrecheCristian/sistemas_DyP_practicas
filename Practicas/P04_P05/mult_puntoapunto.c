@@ -12,9 +12,8 @@ double dwalltime();
 
 
 int main(int argc, char* argv[]){
-    int cantidadDeProcesos, id;
-    int N;
-    double timetick;
+    
+    int cantidadDeProcesos, id, N;
 
     if ((argc != 2) || ((atoi(argv[1])) <= 0)){                 //verifico parametros
         printf("\nUsar: %s n\n  n: Dimension de la matriz \n", argv[0]);
@@ -25,13 +24,10 @@ int main(int argc, char* argv[]){
 	MPI_Comm_rank(MPI_COMM_WORLD,&id);
 	MPI_Comm_size(MPI_COMM_WORLD,&cantidadDeProcesos);
     
-     N = atoi(argv [1]);            //dimension de la matriz
+    N = atoi(argv [1]);            //dimension de la matriz
 
     if (id == 0){                                           //bloque de código que solo ejecuta el proceso 0
-        timetick = dwalltime();                             //el proceso 0 es el encargado de medir el tiempo
-        procesoPadre(id, cantidadDeProcesos, N);
-        printf("Tiempo en segundos: %f\n", dwalltime() - timetick);
-    }
+        procesoPadre(id, cantidadDeProcesos, N);    }
     else{                                                 //bloque de codigo que ejecutan los demas procesos
         procesoHijo(id, cantidadDeProcesos, N);
     }
@@ -43,19 +39,19 @@ int main(int argc, char* argv[]){
 
 
 static void procesoPadre(int id, int cantidadDeProcesos, int N){
-	double *A, *B, *C, *temp;
+	double *A, *B, *C;
     int filas_por_proceso;                          //cantidad de filas que debera calcular cada proceso
     int i, j, k;
+    double timetick;
     register double aux;
-    MPI_Status status;
     int check = 1;
+    MPI_Status status;
 
     filas_por_proceso = N/cantidadDeProcesos;               //cantidad de filas que tendra que procesar cada proceso
 
     A = (double*) malloc(sizeof(double)*N*N);               //reserva memoria para todas las matrices
     B = (double*) malloc(sizeof(double)*N*N);
     C = (double*) malloc(sizeof(double)*N*N);
-    temp = (double*) malloc(sizeof(double)*N*filas_por_proceso);
 
     for (int i=0; i<N; i++){                                //inicializa las matrices 
         for (int j=0; j<N; j++){
@@ -64,6 +60,9 @@ static void procesoPadre(int id, int cantidadDeProcesos, int N){
         }
     }
     
+    //SE REALIZA LA MULTIPLICACION MEDIANTE MPI
+    timetick = dwalltime();                             //el proceso 0 es el encargado de medir el tiempo
+
     for (i=1; i<cantidadDeProcesos; i++){                       //envia las matrices a todos los procesos (se excluye el proceso 0)
         MPI_Send(&A[i*filas_por_proceso], N*filas_por_proceso, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);         //de A solo manda la parte que necesita
         MPI_Send(B, N*N, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);                         //B se manda completa
@@ -84,6 +83,9 @@ static void procesoPadre(int id, int cantidadDeProcesos, int N){
         MPI_Recv(&C[p*filas_por_proceso*N], N*filas_por_proceso, MPI_DOUBLE, p, 0, MPI_COMM_WORLD, &status);
     }
 
+    printf("Tiempo en segundos: %f\n", dwalltime() - timetick);
+
+
     //solo para corroborar la correcta asignacion de C, si es una matriz chica (8, 16) la imprime
     if ( N < 17) {             
         printf("\n\n");
@@ -99,7 +101,6 @@ static void procesoPadre(int id, int cantidadDeProcesos, int N){
     //Verifica el resultado
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
-            //check = check && (getValor(C,i,j,ORDENXFILAS) == N);
             check = check && (C[i*N + j] == N);
         }
     }   
@@ -113,8 +114,6 @@ static void procesoPadre(int id, int cantidadDeProcesos, int N){
     free(A);
     free(B);
     free(C);
-    free(temp);
-
 }
 
 
