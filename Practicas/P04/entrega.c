@@ -1,3 +1,5 @@
+// OPERACION A RESOLVER   --->   R = ABC + AC + (avg(ABC) * avg(AC) * D)
+
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +15,7 @@ double dwalltime();
 int main(int argc, char* argv[]){
     
     int cantidadDeProcesos, id, N;
-    double *A, *B, *C, *ab, *abc;                  //matrices utilizadas
+    double *A, *B, *C, *ab, *abc, *ac, *abc_sum_ac;                  //matrices utilizadas
     int filas_por_proceso;                          
     int i, j, k;
     double timetick;                    //medicion de tiempo
@@ -38,7 +40,10 @@ int main(int argc, char* argv[]){
         B = (double*) malloc(sizeof(double)*N*N);
         C = (double*) malloc(sizeof(double)*N*N);
         ab = (double*) malloc(sizeof(double)*N*filas_por_proceso);
+        ac = (double*) malloc(sizeof(double)*N*N);
         abc = (double*) malloc(sizeof(double)*N*N);
+        abc_sum_ac = (double*) malloc(sizeof(double)*N*N);
+
 
         for (i = 0; i < N; i++){                                //el proceso 0 inicializa las matrices 
             for (j = 0; j < N; j++){
@@ -54,9 +59,10 @@ int main(int argc, char* argv[]){
         A = (double*) malloc(sizeof(double)*N*filas_por_proceso);           //parte de A que me toca procesar
         B = (double*) malloc(sizeof(double)*N*N);                           //B la recibo completa
         C = (double*) malloc(sizeof(double)*N*N);           
-        ab = (double*) malloc(sizeof(double)*N*filas_por_proceso);         
-        abc = (double*) malloc(sizeof(double)*N*filas_por_proceso);        
-
+        ab = (double*) malloc(sizeof(double)*N*filas_por_proceso);
+        ac = (double*) malloc(sizeof(double)*N*filas_por_proceso);         
+        abc = (double*) malloc(sizeof(double)*N*filas_por_proceso);
+        abc_sum_ac = (double*) malloc(sizeof(double)*N*filas_por_proceso);
     }
 
     //bloque que ejecutan todos los procesos
@@ -65,6 +71,7 @@ int main(int argc, char* argv[]){
     MPI_Bcast(B, N*N, MPI_DOUBLE, ROOT, MPI_COMM_WORLD);                //B se manda completa mediante broadcast para todos los procesos
     MPI_Bcast(C, N*N, MPI_DOUBLE, ROOT, MPI_COMM_WORLD);                //C se manda completa
 
+    //Multiplicacion AB
     for (i = 0; i < filas_por_proceso; i++){                            //cada proceso calcula su parte 
         for (j = 0; j < N; j++){                                
             aux = 0;
@@ -75,7 +82,8 @@ int main(int argc, char* argv[]){
         }
     }
 
-     for (i = 0; i < filas_por_proceso; i++){            
+    //multiplicacion ABC
+    for (i = 0; i < filas_por_proceso; i++){            
         for (j = 0; j < N; j++){                                
             aux = 0;
             for (k=0; k<N; k++){
@@ -85,9 +93,27 @@ int main(int argc, char* argv[]){
         }
     }
 
+    //multiplicacion AC
+    for (i = 0; i < filas_por_proceso; i++){            
+        for (j = 0; j < N; j++){                                
+            aux = 0;
+            for (k=0; k<N; k++){
+                aux += A[i*N + k] * C[k + j*N]; 
+            }
+            ac[i*N + j] = aux;
+        }
+    }
+
+    //suma ABC + AC
+    for (i = 0; i < filas_por_proceso; i++){            
+        for (j = 0; j < N; j++){                                
+            abc_sum_ac[i*N + j] = abc[i*N + j] + ac[i*N + j]; 
+        }
+    }
+
     //Recibo el tramo procesado por cada uno de los demas procesos
      //que sera almacenado en orden segun ID en C
-    MPI_Gather(abc, filas_por_proceso*N, MPI_DOUBLE, abc, filas_por_proceso*N, MPI_DOUBLE, ROOT, MPI_COMM_WORLD);
+    MPI_Gather(abc_sum_ac, filas_por_proceso*N, MPI_DOUBLE, abc_sum_ac, filas_por_proceso*N, MPI_DOUBLE, ROOT, MPI_COMM_WORLD);
 
 
     //Por ultimo, nuevamente solo el proceso 0 imprime el tiempo y realiza las verificaciones de resultado
@@ -101,7 +127,7 @@ int main(int argc, char* argv[]){
             for (int i = 0; i < N; i++) {
                 printf("| ");
                 for (int j = 0; j < N; j++) {
-                    printf("%.f ", abc[i*N + j]);
+                    printf("%.f ", abc_sum_ac[i*N + j]);
                 }
                 printf("|\n");
             }
@@ -110,7 +136,7 @@ int main(int argc, char* argv[]){
         //Verifica el resultado
         for(int i=0;i<N;i++){
             for(int j=0;j<N;j++){
-                check = check && (abc[i*N + j] == N*N);
+                check = check && (abc_sum_ac[i*N + j] == (N*N)+N);
             }
         }   
 
@@ -121,11 +147,11 @@ int main(int argc, char* argv[]){
         }
     }
     
-   /* free(A);
+    free(A);
     free(B);
     free(C);
     free(ab);
-    free(abc);*/
+    free(abc);
     
 	MPI_Finalize();
 	return(0);
